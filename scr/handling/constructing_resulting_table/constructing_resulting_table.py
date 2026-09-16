@@ -10,7 +10,9 @@ from scr.database_assets.sqlite_database.handling_database.handler_sqlite_cnc_da
 
 
 class ConstructorResultLogic:
-    def __init__(self, path_to_pivot_fusion_tabel: str):
+    def __init__(self, path_to_pivot_fusion_tabel: str, log_callback=None):
+        self.log = log_callback if log_callback else print
+
         self.path_to_pivot_fusion_tabel = os.path.normpath(path_to_pivot_fusion_tabel)
         self.data_pivot_fusion_tabel = {}
         self.result_data = {}
@@ -98,7 +100,7 @@ class ConstructorResultLogic:
         self.result_data = result_data.copy()
 
     def main(self):
-        self.result_data, self.data_pivot_fusion_tabel = InitialDataCollector(self.path_to_pivot_fusion_tabel).main()
+        self.result_data, self.data_pivot_fusion_tabel = InitialDataCollector(self.path_to_pivot_fusion_tabel, log_callback=self.log).main()
         self.search_fio()
         self.removal_of_duplicate_records()
 

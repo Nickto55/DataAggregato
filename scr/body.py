@@ -4,6 +4,8 @@ import os.path
 import threading
 import pandas as pd
 import customtkinter as ctk
+import queue
+import tkinter as tk
 
 from tkinter import filedialog, END
 
@@ -12,11 +14,10 @@ from scr.aggregato import AggregatoMainLogic
 from scr.database_assets.sqlite_database.handling_database.handler_sqlite_database_program import ReceiverDataBase as ProgramDatabase
 from scr.config_assets.handling_config.handler_aggregato_config import ConfigAggregato
 
+
 def info_database():
     sqlite_database_program = ProgramDatabase()
-
     print(sqlite_database_program.get_program_data('Aggregato'))
-
 
 
 def open_fils_to_path(name: str) -> list:
@@ -44,6 +45,7 @@ def resource_path(relative_path):
             base_path = os.path.dirname(current_dir)
 
         return os.path.normpath(os.path.join(base_path, refactored_path))
+
     try:
         from PIL import Image
         name_without_ext, ext = os.path.splitext(os.path.basename(relative_path))
@@ -57,9 +59,7 @@ def resource_path(relative_path):
         relative_path = refactor_path(f"static/img/ico/{os.path.basename(relative_path)}")
     except:
         print("Не удалось создать иконку")
-
     return refactor_path(relative_path)
-
 
 
 class AppGui(ctk.CTk):
@@ -71,14 +71,13 @@ class AppGui(ctk.CTk):
         ctk.set_appearance_mode("dark")
         self.iconbitmap(resource_path(r"static/img/ico/aggregato.ico"))
 
-        # self.cofig_aggregato = ConfigAggregato()
-        # self.sqlite_database_cnc = ReceiverDataBase()
-        #
-        # self.len_sql_database = len(self.sqlite_database_cnc.get_all_db_program())
-        # print(self.len_sql_database)
 
         self.management_window()
         self.path_outfile = None
+
+        self.log_queue = queue.Queue()
+        self.table_queue = queue.Queue()
+        self.check_log_queue()  # Запуск цикла проверки очереди
 
     # noinspection PyAttributeOutsideInit
     def geomitri_constants(self):
@@ -269,7 +268,6 @@ class AppGui(ctk.CTk):
             def merge_color():
                 self.button_open_result_table.configure(fg_color='#8f764f', hover_color='#5c4b32')
 
-            # noinspection PyTypeChecker
             self.button_open_result_table.after(1000, merge_color)
 
             try:
@@ -286,7 +284,6 @@ class AppGui(ctk.CTk):
             except:
                 send_notification(f"Файл открыт: {os.path.basename(self.path_outfile)}", "", 16)
 
-            # noinspection PyTypeChecker
             self.button_open_result_table.after(5000, self.start_button.configure(state="normal"))
         else:
             self.log("Ошибка при открытии файла, отсссуствует путь", color_log="red")
@@ -313,21 +310,67 @@ class AppGui(ctk.CTk):
             self.log(f"<Установлен путь для файла отчетов>", color_log='#9aa5aa')
             self.reply_path_entry.configure(border_color='#788084')
 
-    def log(self, message, color_log=None):
-        """Вывод логов в текстовое поле GUI с цветом"""
-        self.status_text.insert("end", f"{message}\n")
+    def table_callback(self, row_data):
+        """Колбэк для передачи данных из фонового потока в очередь"""
+        self.table_queue.put(row_data)
 
-        if color_log:
-            end_index = self.status_text.index("end-1c")
-            line_num = end_index.split('.')[0]
-            start_pos = f"{int(line_num) - 1}.0"
-            end_pos = f"{int(line_num) - 1}.end"
+    def check_log_queue(self):
+        """Проверяет очередь логов и выводит в GUI"""
+        try:
+            while True:
+                message, color_log, line_target, mode = self.log_queue.get_nowait()
+                self._log_to_gui(message, color_log, line_target, mode)
+        except queue.Empty:
+            pass
+        finally:
+            self.after(50, self.check_log_queue)
 
-            tag_name = f"color_{color_log}"
-            self.status_text.tag_config(tag_name, foreground=color_log)
-            self.status_text.tag_add(tag_name, start_pos, end_pos)
+    def _log_to_gui(self, message, color_log=None, line_target=None, mode='append'):
+        if line_target is not None:
+            line_pos = f"{line_target}.0"
+            line_end = f"{line_target}.end"
+
+            try:
+                self.status_text.index(line_end)
+            except tk.TclError:
+                current_lines = int(self.status_text.index('end-1c').split('.')[0])
+                for _ in range(line_target - current_lines + 1):
+                    self.status_text.insert("end", "\n")
+
+            if mode == 'replace':
+                self.status_text.delete(line_pos, line_end)
+                self.status_text.insert(line_pos, message)
+            else:
+                current_end = self.status_text.index(line_end)
+                line_content = self.status_text.get(line_pos, line_end)
+                if line_content.endswith('\n'):
+                    insert_pos = f"{line_target}.{len(line_content) - 1}"
+                else:
+                    insert_pos = line_end
+                self.status_text.insert(insert_pos, message)
+
+            if color_log:
+                tag_name = f"color_{color_log}_{line_target}"
+                self.status_text.tag_config(tag_name, foreground=color_log)
+                self.status_text.tag_add(tag_name, line_pos, line_end)
+        else:
+            self.status_text.insert("end", f"{message}\n")
+
+            if color_log:
+                end_index = self.status_text.index("end-1c")
+                line_num = end_index.split('.')[0]
+                start_pos = f"{int(line_num) - 1}.0"
+                end_pos = f"{int(line_num) - 1}.end"
+                tag_name = f"color_{color_log}"
+                self.status_text.tag_config(tag_name, foreground=color_log)
+                self.status_text.tag_add(tag_name, start_pos, end_pos)
 
         self.status_text.see("end")
+
+    def log(self, message, color_log=None, line_target=None, mode='append'):
+        """Потокобезопасный лог: кладет сообщение в очередь, чтобы GUI не зависал"""
+        self.log_queue.put((message, color_log, line_target, mode))
+
 
     def run_manager_thread(self):
         """Запуск в отдельном потоке, чтобы GUI не зависал"""
@@ -335,7 +378,8 @@ class AppGui(ctk.CTk):
         self.start_button.configure(state="disabled")
 
         if (
-                pd.isna(self.reply_path_entry.get()) or self.reply_path_entry.get() == '') and not self.checkbox_pivot_var.get() and self.checkbox_construction_result_var.get():
+                pd.isna(
+                    self.reply_path_entry.get()) or self.reply_path_entry.get() == '') and not self.checkbox_pivot_var.get() and self.checkbox_construction_result_var.get():
             self.log("Ошибка, укажите путь к файлу", color_log="red")
             self.start_button.configure(state="normal")
 
@@ -349,19 +393,12 @@ class AppGui(ctk.CTk):
 
     def execute_logic(self):
         self.path_outfile = None
-        # if pd.isna(self.reply_path_entry.get()) or self.reply_path_entry.get() == "":
-        #     self.log("Введите путь к файлу", color_log='red')
-        #     self.reply_path_entry.configure(border_color="red")
-        #     self.start_button.configure(state="normal")
-        #
-        #     return
-        # else:
-        #     self.reply_path_entry.configure(border_color='#788084')
 
         self.log("Запуск программы...")
-        # try:
+
         self.path_outfile = None
-        manager = AggregatoMainLogic()
+        manager = AggregatoMainLogic(log_callback=self.log)
+
         manager.main(
             path_to_file=self.reply_path_entry.get()
             , run_pivot_fusion=bool(self.checkbox_pivot_var.get())
@@ -376,13 +413,8 @@ class AppGui(ctk.CTk):
         self.log("Процесс успешно завершен.", color_log="green")
         send_notification("Программа завершена", "Программа завершена, проверте файл", 16)
         self.start_button.configure(state="normal")
-        # except Exception as e:
-        #     self.log(f"ERROR: {str(e)}", color_log="red")
-        # finally:
-        #     self.start_button.configure(state="normal")
 
 
 if __name__ == "__main__":
     app = AppGui()
-    # info_database()
     app.mainloop()

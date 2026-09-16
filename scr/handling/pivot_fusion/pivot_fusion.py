@@ -12,9 +12,11 @@ from scr.config_assets.handling_config.handler_aggregato_config import ConfigAgg
 
 
 class PivotFusionLogic:
-    def __init__(self):
+    def __init__(self, log_callback=None):
         self.config_program = ConfigMainProgram()
         self.config_aggregato = ConfigAggregato()
+
+        self.log = log_callback if log_callback else print
 
         self.list_name_dse = self.config_aggregato.get_all_config_program().get('name dse', '')
 
@@ -23,7 +25,7 @@ class PivotFusionLogic:
                 raise
             self.list_name_dse = self.list_name_dse.split('|::|')
         except:
-            print(f'pivot_fusion: лвыаджваыжлвыафвыфавфыаы')
+            self.log(f'pivot_fusion: лвыаджваыжлвыафвыфавфыаы')
             self.list_name_dse = ['Фрезерные ЧПУ', 'Прутковые автоматы', 'Токарные ЧПУ', 'Автоматы ЧПУ']
 
     def main(self, path_to_out_file=None):
@@ -103,12 +105,12 @@ class PivotFusionLogic:
 
         return result_data, result_cut_out
 
-    @staticmethod
-    def report_handler(link_to_directory_reports):
+
+    def report_handler(self, link_to_directory_reports):
         result_data = {}
         for NAME_DIRECTORY_REPORT in os.listdir(link_to_directory_reports):
 
-            data_directory = ReportHandler().get_data_from_report_directory(
+            data_directory = ReportHandler(log_callback=self.log).get_data_from_report_directory(
                 os.path.join(link_to_directory_reports, NAME_DIRECTORY_REPORT)
             )
             if data_directory is None: continue

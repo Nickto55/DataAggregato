@@ -7,7 +7,9 @@ from scr.config_assets._receiver_config import ReceiverConfig
 
 
 class ConfigMainProgram:
-    def __init__(self):
+    def __init__(self, log_callback=None):
+        self.log = log_callback if log_callback else print
+
         self.data_base = ReceiverConfig()
         self.config_section_classification = 'program'
 
@@ -34,8 +36,8 @@ class ConfigMainProgram:
             self.data_base.save()
             self.data_base.load()
         else:
-            print(
-                f"Данного ключа('{key_name_file}') нет в словаре 'size', возможные варианты {list(data.keys())}"
+            self.log(
+                f"Данного ключа('{key_name_file:<15}') нет в словаре 'size', возможные варианты {list(data.keys())}"
             )
             # CTkMessagebox(
             #     title="Не критическая ошибка",

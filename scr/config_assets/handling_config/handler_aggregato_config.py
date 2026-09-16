@@ -7,7 +7,9 @@ from scr.config_assets._receiver_config import ReceiverConfig
 
 
 class ConfigAggregato:
-    def __init__(self):
+    def __init__(self, log_callback=None):
+        self.log = log_callback if log_callback else print
+
         self.data_base = ReceiverConfig()
         self.config_section_classification = 'aggregato'
 
@@ -34,7 +36,7 @@ class ConfigAggregato:
             self.data_base.save()
             self.data_base.load()
         else:
-            print(
+            self.log(
                 f"Данного ключа('{key_name_file}') нет в словаре 'size', возможные варианты {list(data.keys())}"
             )
             # CTkMessagebox(

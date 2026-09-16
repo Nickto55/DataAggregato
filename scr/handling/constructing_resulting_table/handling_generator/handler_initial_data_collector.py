@@ -3,7 +3,8 @@ import os
 from scr.excel_assets.readers.excel_reader import ExcelReader as _ExcelReader
 
 class InitialDataCollector:
-    def __init__(self, path_to_pivot_fusion_tabel:str):
+    def __init__(self, path_to_pivot_fusion_tabel:str, log_callback=None):
+        self.log = log_callback if log_callback else print
         self.path_to_pivot_fusion_tabel = os.path.normpath(path_to_pivot_fusion_tabel)
         self.data_pivot_fusion_tabel = {}
 

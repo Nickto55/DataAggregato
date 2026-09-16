@@ -13,7 +13,9 @@ from scr.database_assets.json_database.handling_database.handler_db_reports impo
 
 
 class ReportHandler:
-    def __init__(self):
+    def __init__(self, log_callback=None):
+        self.log = log_callback if log_callback else print
+
         self.config_aggregato = ConfigAggregato()
         self.config_directory_report = ConfigDirectoryReport()
 
@@ -73,9 +75,9 @@ class ReportHandler:
                     )
                     data_report = database_repors.get_all_database_dict()
                     return data_report
-        except Exception as e:
-            print(e)
-            raise e
+        except Exception as error_get_data:
+            self.log(error_get_data, )
+            raise error_get_data
 
         reader = MultiSheetReader(file_path=path_to_report_file)
         data_report = reader.load_sheets()
@@ -127,12 +129,14 @@ class ReportHandler:
     def get_data_from_report_directory(self, path_to_directory):
         # name_directory = os.path.basename(path_to_directory)
         # if len(name_directory) == 7:
-        if self.name_report_file[0] in os.listdir(path_to_directory):
-            return self._data_get_report_tabel(path_to_directory)
-        for name_tabel_file in os.listdir(path_to_directory):
-            if 'программы для станков с ЧПУ ' in name_tabel_file:
+        if os.path.isdir(path_to_directory):
+            if self.name_report_file[0] in os.listdir(path_to_directory):
                 return self._data_get_report_tabel(path_to_directory)
+            for name_tabel_file in os.listdir(path_to_directory):
+                if 'программы для станков с ЧПУ ' in name_tabel_file:
+                    return self._data_get_report_tabel(path_to_directory)
 
         # else:
-        print(f'Не удалось обработать: {os.path.basename(path_to_directory)},        по пути {path_to_directory}')
+        # self.log(f'Не удалось обработать: {os.path.basename(path_to_directory):<10}, по пути {path_to_directory}')
+        self.log(f'--Не удалось обработать: {os.path.basename(path_to_directory):}', color_log='#575a5e')
         return None
