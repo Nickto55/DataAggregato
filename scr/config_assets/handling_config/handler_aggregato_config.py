@@ -11,6 +11,7 @@ class ConfigAggregato:
         self.log = log_callback if log_callback else print
 
         self.data_base = ReceiverConfig()
+        self.path_to_config = self.data_base.file_path
         self.config_section_classification = 'aggregato'
 
     def get_all_config_program(self):
