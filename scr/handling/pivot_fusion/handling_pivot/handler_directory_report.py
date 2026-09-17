@@ -35,6 +35,7 @@ class ReportHandler:
         result_data = {}
         list_fiels_in_directory = os.listdir(path_to_directory)
 
+        path_to_report_file = None
         if 'Отчёт по УП БАМ.xlsm' in list_fiels_in_directory:
             path_to_report_file = os.path.join(path_to_directory, self.name_report_file[0])
         else:
@@ -42,7 +43,9 @@ class ReportHandler:
                 if self.name_report_file[1] in namefile:
                     path_to_report_file = os.path.join(path_to_directory, namefile)
                     break
-
+        if path_to_report_file is None:
+            # noinspection PyInconsistentReturns
+            return
         name_directory_report_database = self.config_aggregato.get_all_config_program().get(
             'name directory database save reports'
             , None
@@ -61,6 +64,7 @@ class ReportHandler:
                     break
 
             # noinspection PyUnboundLocalVariable
+            print(f'path_to_report_file:{path_to_report_file}')
             time_modify_report = os.path.getmtime(path_to_report_file)
             data_config_reports = self.config_directory_report.get_all_config_program()
 
@@ -76,7 +80,7 @@ class ReportHandler:
                     data_report = database_repors.get_all_database_dict()
                     return data_report
         except Exception as error_get_data:
-            self.log(error_get_data, )
+            self.log(error_get_data)
             raise error_get_data
 
         reader = MultiSheetReader(file_path=path_to_report_file)
@@ -127,8 +131,6 @@ class ReportHandler:
         return result_data
 
     def get_data_from_report_directory(self, path_to_directory):
-        # name_directory = os.path.basename(path_to_directory)
-        # if len(name_directory) == 7:
         if os.path.isdir(path_to_directory):
             if self.name_report_file[0] in os.listdir(path_to_directory):
                 return self._data_get_report_tabel(path_to_directory)
@@ -136,7 +138,7 @@ class ReportHandler:
                 if 'программы для станков с ЧПУ ' in name_tabel_file:
                     return self._data_get_report_tabel(path_to_directory)
 
-        # else:
-        # self.log(f'Не удалось обработать: {os.path.basename(path_to_directory):<10}, по пути {path_to_directory}')
+
+        # noinspection PyArgumentList
         self.log(f'--Не удалось обработать: {os.path.basename(path_to_directory):}', color_log='#575a5e')
         return None
