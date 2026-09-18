@@ -6,6 +6,7 @@ from scr.handling.pivot_fusion.pivot_fusion import PivotFusionLogic
 from scr.handling.constructing_resulting_table.constructing_resulting_table import ConstructorResultLogic
 
 
+#555 noinspection PyArgumentList
 class AggregatoMainLogic:
     def __init__(self,log_callback=None):
         self.path_to_file = ''
@@ -21,14 +22,14 @@ class AggregatoMainLogic:
 
     def main(self, path_to_file=None, run_pivot_fusion: bool = False, run_construction_result: bool = False):
         if pd.isna(path_to_file) or path_to_file == '': path_to_file = os.path.join(os.getcwd(), 'Aggregato result.xlsx')
-        self.log('Начинаем загрузку данных...' )
+        self.log('Начинаем загрузку данных...', color_log='green', level='special')
         self.path_to_file = path_to_file
 
         if run_pivot_fusion:
-            self.log('Запуск программы для сбора ежемесячных отчетов', color_log='#a96b21')
+            self.log('Запуск программы для сбора ежемесячных отчетов', color_log='#a96b21', level='special')
             self.start_pivot_fusion_program()
         if run_construction_result:
-            self.log('Запуск программы для сверки ФИО', color_log='#a96b21')
+            self.log('Запуск программы для сверки ФИО', color_log='#a96b21', level='special')
             self.start_construction_result()
 
 

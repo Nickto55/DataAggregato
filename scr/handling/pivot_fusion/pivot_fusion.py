@@ -11,6 +11,7 @@ from scr.config_assets.handling_config.handler_program_config import ConfigMainP
 from scr.config_assets.handling_config.handler_aggregato_config import ConfigAggregato
 
 
+# noinspection PyArgumentList
 class PivotFusionLogic:
     def __init__(self, log_callback=None):
         self.config_program = ConfigMainProgram()
@@ -24,8 +25,9 @@ class PivotFusionLogic:
             if pd.isna(self.list_name_dse) or self.list_name_dse == '':
                 raise
             self.list_name_dse = self.list_name_dse.split('|::|')
-        except:
-            self.log(f'pivot_fusion: лвыаджваыжлвыафвыфавфыаы')
+        except Exception as warn_:
+            self.log(f'pivot_fusion: Не удалось загрузить наименование листов рц', level='warn')
+            self.log(warn_, level='warn')
             self.list_name_dse = ['Фрезерные ЧПУ', 'Прутковые автоматы', 'Токарные ЧПУ', 'Автоматы ЧПУ']
 
     def main(self, path_to_out_file=None):
@@ -94,7 +96,7 @@ class PivotFusionLogic:
                     try:
                         del result_update_row['Отчет']
                     except:
-                        input('pivot_fusion. GHjdklsfjsdkz')
+                        self.log('pivot_fusion. GHjdklsfjsdkz')
 
                     if result_update_row in result_update_data.values():
                         result_cut_out[len(result_cut_out)] = result_row

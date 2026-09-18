@@ -24,9 +24,9 @@ class ConfigAggregato:
             self.data_base.save()
             self.data_base.load()
 
-    def get_size_config(self):
+    def get_data_from_key(self, key):
         self.data_base.load()
-        return self.data_base.data[self.config_section_classification].get('size', '')
+        return self.data_base.data[self.config_section_classification].get(key, '')
 
     def set_size_config(self, key_name_file, path_to_file):
 

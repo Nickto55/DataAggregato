@@ -57,10 +57,10 @@ class ExcelInserter:
             cell.fill = self.fill_color1
             cell.font = Font(color="f2ecde")
 
-        try:
-            ws.auto_filter.ref = f"A1:{get_column_letter(len(header_filter))}1"
-        except:
-            ws.auto_filter.ref = f"A1:Z1"
+        # try:
+        #     ws.auto_filter.ref = f"A1:{get_column_letter(len(header_filter))}1"
+        # except:
+        ws.auto_filter.ref = f"A1:ZZ1"
 
         row_idx = 2
         for product_key, product_value in data.items():

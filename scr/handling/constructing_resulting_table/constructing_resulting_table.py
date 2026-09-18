@@ -8,7 +8,9 @@ from scr.handling.constructing_resulting_table.handling_generator.handler_initia
     InitialDataCollector
 from scr.database_assets.sqlite_database.handling_database.handler_sqlite_cnc_database_program import ReceiverDataBaseCNC
 
-
+# log_callback=self.log
+# ,log_callback=None
+# self.log = log_callback if log_callback else print
 class ConstructorResultLogic:
     def __init__(self, path_to_pivot_fusion_tabel: str, log_callback=None):
         self.log = log_callback if log_callback else print
@@ -44,6 +46,7 @@ class ConstructorResultLogic:
         }
 
     def search_fio(self):
+        self.log('поиск ФИО по базе данныш...', level='info')
         for num_row, data_row in self.result_data.items():
             dse = data_row.get('ДСЕ', None)
             if dse is None: continue
@@ -69,6 +72,7 @@ class ConstructorResultLogic:
             self.result_data[num_row]['ФИО'] = string_fio
 
     def removal_of_duplicate_records(self):
+        self.log('слияние дубликатов...', level='info')
         result_data = {}
         for num_row, data_row in self.result_data.items():
             work_central = data_row.get('РЦ', '')
@@ -101,11 +105,12 @@ class ConstructorResultLogic:
 
     def main(self):
         self.result_data, self.data_pivot_fusion_tabel = InitialDataCollector(self.path_to_pivot_fusion_tabel, log_callback=self.log).main()
+        self.log('Получен список дсе', level='special')
         self.search_fio()
         self.removal_of_duplicate_records()
 
         writer = ExcelInserter(file_path=self.path_to_pivot_fusion_tabel)
-        writer.insert_data(data={'0': self.result_data}, sheet_name='cnc database')
+        writer.insert_data(data={'0': self.result_data}, sheet_name='Автор УП')
 
 
 if __name__ == '__main__':

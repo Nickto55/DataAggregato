@@ -1,23 +1,23 @@
 import sys
+import queue
+
 import plyer
 import os.path
-import threading
 import pystray
+import threading
 import pandas as pd
-from ctypes import windll
-
-import customtkinter as ctk
-import queue
 import tkinter as tk
+import customtkinter as ctk
 
 from PIL import Image
-from CTkMenuBar import CustomDropdownMenu
+from ctypes import windll
 from tkinter import filedialog, END
+from CTkMenuBar import CustomDropdownMenu
 
 from scr.aggregato import AggregatoMainLogic
+from scr.config_assets.handling_config.handler_aggregato_config import ConfigAggregato
 from scr.database_assets.sqlite_database.handling_database.handler_sqlite_database_program import \
     ReceiverDataBase as ProgramDatabase
-from scr.config_assets.handling_config.handler_aggregato_config import ConfigAggregato
 
 
 def info_database():
@@ -40,7 +40,9 @@ def send_notification(title, message, settime=15):
                               app_icon=resource_path(r"static/img/ico/aggregato.ico"))
 
 
-def resource_path(relative_path):
+def resource_path(relative_path, log_callback=None):
+    log = log_callback if log_callback else print
+
     def refactor_path(refactored_path):
         if hasattr(sys, '_MEIPASS'):
             # noinspection PyProtectedMember
@@ -62,7 +64,7 @@ def resource_path(relative_path):
         img.save(refactor_path(f"static/img/ico/{os.path.basename(relative_path)}"), sizes=icon_sizes)
         relative_path = refactor_path(f"static/img/ico/{os.path.basename(relative_path)}")
     except:
-        print("Не удалось создать иконку")
+        log("Не удалось создать иконку")
     return refactor_path(relative_path)
 
 
@@ -76,38 +78,38 @@ class AppGui(ctk.CTk):
         self.geometry(f"{self.window_main_x}x{self.window_main_y}")
         ctk.set_appearance_mode("dark")
         self.overrideredirect(True)
-        self.after(10, self.set_appwindow())
 
-        self.iconbitmap(resource_path(r"static/img/ico/aggregato.ico"))
 
-        self.config_aggregato = ConfigAggregato()
+        self.global_variables()
 
         self.drop_down_menu()
         self.management_window()
 
-        self.path_outfile = None
+        self.iconbitmap(resource_path(r"static/img/ico/aggregato.ico", log_callback=self.log))
 
         self.log_queue = queue.Queue()
         self.table_queue = queue.Queue()
 
         self.check_log_queue()
 
-    def set_appwindow(self):
-        GWL_EXSTYLE = -20
-        WS_EX_APPWINDOW = 0x00040000
-        WS_EX_TOOLWINDOW = 0x00000080
-        hwnd = windll.user32.GetParent(self.winfo_id())
+    # noinspection PyAttributeOutsideInit
+    def global_variables(self):
+        self.config_aggregato = ConfigAggregato()
 
-        style = windll.user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
+        level = self.config_aggregato.get_data_from_key(key='log level')
+        self.log_level = level if not pd.isna(level) and level != 'debug' else 'info'
+        self.dict_heft_level_for_log = {
+            'error': 1.0
+            , 'warn': 2.0
+            , 'info': 3.0
+            , 'special': -1.0
+            , 'debug': -1.0
+        }
+        del level
 
-        style = style & ~WS_EX_TOOLWINDOW
-        style = style | WS_EX_APPWINDOW
+        self.path_outfile = None
 
-        windll.user32.SetWindowLongW(hwnd, GWL_EXSTYLE, style)
-
-        self.wm_withdraw()
-        self.after(10, lambda: self.wm_deiconify())
-
+    # noinspection PyAttributeOutsideInit
     def drop_down_menu(self):
         self.size_global_menu_program = 50
         self.size_menu_program = 20
@@ -151,8 +153,8 @@ class AppGui(ctk.CTk):
             corner_radius=0,
             border_spacing=0,
             image=ctk_icon,
-            fg_color="#000000",
-            hover_color="#000000"
+            fg_color="#2b2b2b",
+            hover_color="#414141"
         )
         self.button_ico_from_global_menu.place(x=0, y=0)
 
@@ -190,9 +192,6 @@ class AppGui(ctk.CTk):
         )
         button_close.place(x=self.window_main_x - self.width_button_menu_frame * 3, y=0)
 
-        def do_something(action):
-            print(f"Выполнено действие: {action}")
-
         """Меню бар"""
         menu_button = ctk.CTkButton(
             self
@@ -206,15 +205,30 @@ class AppGui(ctk.CTk):
         menu_button.place(x=self.width_button_menu_frame, y=0)
         dropdown = CustomDropdownMenu(widget=menu_button)
 
-        dropdown.add_option(option="Создать новый файл", command=lambda: do_something("Новый файл"))
-        dropdown.add_option(option="Открыть...", command=lambda: do_something("Открыть"))
+        def set_log_level(level):
+            self.log_level = level
+            self.config_aggregato.set_config_progrm(key='log level', data=level)
+            self.submenu_logs.menu_seed_object.configure(text=f'logs — {(level[:1]).upper()}{level[1:]}')
+
+            # изменение окантовки консоли
+            if level == "debug":
+                self.logs_frame.configure(fg_color='#cf8328')
+            else:
+                self.logs_frame.configure(fg_color='#2b2b2b')
+
+        self.submenu_logs = dropdown.add_submenu(f'logs — {(self.log_level[:1]).upper()}{self.log_level[1:]}')
+        self.submenu_logs.add_option(option='Error', command=lambda: set_log_level('error'))
+        self.submenu_logs.add_option(option='Warn', command=lambda: set_log_level('warn'))
+        self.submenu_logs.add_option(option='Info', command=lambda: set_log_level('info'))
+        self.submenu_logs.add_separator()
+        self.submenu_logs.add_option(option='Debug', command=lambda: set_log_level('debug'))
 
         dropdown.add_separator()
 
-        submenu = dropdown.add_submenu("Настройки конфига")
-        submenu.add_option(option="Настроить", command=self._run_configuration_settings)
-        submenu.add_option(option="Open in explorer",
-                           command=lambda: os.startfile(self.config_aggregato.path_to_config))
+        submenu_config = dropdown.add_submenu("Настройки конфига")
+        submenu_config.add_option(option="Настроить", command=self._run_configuration_settings)
+        submenu_config.add_option(option="Open in explorer",
+                                  command=lambda: os.startfile(os.path.dirname(self.config_aggregato.path_to_config)))
 
         # dropdown.add_option(option="Выход", command=self.quit)
 
@@ -259,6 +273,7 @@ class AppGui(ctk.CTk):
         self.width_status_text = self.width_log_frame - 2 * self.indent_frame
         self.height_status_text = self.height_log_frame - 2 * self.indent_frame
 
+    # noinspection PyAttributeOutsideInit
     def start_move(self, event):
         self.x = event.x
         self.y = event.y
@@ -394,18 +409,18 @@ class AppGui(ctk.CTk):
         self.checkbox_construction_result_var.select()
 
         """log frame"""
-        logs_frame = ctk.CTkFrame(
+        self.logs_frame = ctk.CTkFrame(
             self
             , width=self.width_log_frame
             , height=self.height_log_frame
         )
-        logs_frame.place(
+        self.logs_frame.place(
             x=self.location_x_log_frame
             , y=self.location_y_log_frame
         )
 
         self.status_text = ctk.CTkTextbox(
-            logs_frame
+            self.logs_frame
             , width=self.width_status_text
             , height=self.height_status_text
         )
@@ -413,14 +428,11 @@ class AppGui(ctk.CTk):
             x=self.indent_frame,
             y=self.indent_frame
         )
-        self.status_text.insert("0.0", "Готов к запуску...\n")
+        # self.status_text.insert("0.0", "Готов к запуску...\n")
 
     def swith_main_frame(self):
-        if not self.checkbox_pivot_var.get() and self.checkbox_construction_result_var.get():
-            print('-->', end=' ')
-        else:
-            pass
-        print(self.checkbox_pivot_var.get())
+        self.log(f' {str(bool(self.checkbox_pivot_var.get())):<6}|{bool(self.checkbox_construction_result_var.get())}',
+                 level='debug')
 
     def command_batton_open_result(self):
         if not self.path_outfile is None:
@@ -531,7 +543,37 @@ class AppGui(ctk.CTk):
 
         self.status_text.see("end")
 
-    def log(self, message, color_log=None, line_target=None, mode='append'):
+    def log(self, message, color_log=None, line_target=None, mode='append', level=None):
+
+        level = level if not pd.isna(level) else 'no level'
+        if level == 'no level':
+            color_log = '#f5a7b5'
+        elif level == 'special':
+            color_log = color_log if not pd.isna(color_log) else '#ccdffc'
+        elif level == 'error':
+            color_log = color_log if not pd.isna(color_log) else 'red'
+        elif level == 'info':
+            message = '~~' + message
+            color_log = color_log if not pd.isna(color_log) else '#575a5e'
+        elif level == 'debug':
+            message = '**' + message
+            color_log = color_log if not pd.isna(color_log) else '#fff'
+
+        if level == 'debug' and self.log_level != 'debug':
+            print(message)
+            return
+
+        if level in self.dict_heft_level_for_log.keys():
+            if self.log_level == 'debug':
+                pass
+            elif self.dict_heft_level_for_log.get(level, 99.0) > self.dict_heft_level_for_log.get(self.log_level, None):
+                print(message)
+                return
+        else:
+            self.log(message='Не правильно указан log level', level='error')
+            self.log(message=level, level='error')
+            self.log(message=message, level='error')
+
         """Потокобезопасный лог: кладет сообщение в очередь, чтобы GUI не зависал"""
         self.log_queue.put((message, color_log, line_target, mode))
 
@@ -557,7 +599,7 @@ class AppGui(ctk.CTk):
     def execute_logic(self):
         self.path_outfile = None
 
-        self.log("Запуск программы...")
+        self.log("Запуск программы...", color_log='green', level='special')
 
         self.path_outfile = None
         manager = AggregatoMainLogic(log_callback=self.log)
@@ -573,13 +615,12 @@ class AppGui(ctk.CTk):
             x=self.width_path_entry + 22
             , y=self.height_row_in_frame + 2 * self.indent_frame + 1
         )
-        self.log("Процесс успешно завершен.", color_log="green")
+        self.log("Процесс успешно завершен.", color_log="green", level='special')
         send_notification("Программа завершена", "Программа завершена, проверте файл", 16)
         self.start_button.configure(state="normal")
 
-    @staticmethod
-    def _run_configuration_settings():
-        _ConfigurationSettingsWindow()
+    def _run_configuration_settings(self):
+        _ConfigurationSettingsWindow(log_callback=self.log)
 
 
 class _ConfigurationSettingsWindow(ctk.CTkToplevel):
@@ -590,7 +631,8 @@ class _ConfigurationSettingsWindow(ctk.CTkToplevel):
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self):
+    def __init__(self, log_callback=None):
+        self.log = log_callback if log_callback else print
         if getattr(self, "_initialized", False):
             self.lift()
             self.focus_force()
@@ -692,7 +734,7 @@ class _ConfigurationSettingsWindow(ctk.CTkToplevel):
 
     def save_param(self):
         for key, label_ in self.labels.items():
-            print(key, self.labels[key][1].get())
+            self.log(f'{key}, {self.labels[key][1].get()}', level='debug')
             self.config_aggregato.set_config_progrm(key=key, data=self.labels[key][1].get())
         self.destroy()
         # sys.exit(0)
@@ -724,5 +766,5 @@ class _ConfigurationSettingsWindow(ctk.CTkToplevel):
 
 if __name__ == "__main__":
     app = AppGui()
-    # _ConfigurationSettingsWindow().mainloop()
     app.mainloop()
+    # _ConfigurationSettingsWindow().mainloop()

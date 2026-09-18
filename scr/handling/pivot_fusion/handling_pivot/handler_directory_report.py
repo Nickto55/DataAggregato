@@ -64,7 +64,8 @@ class ReportHandler:
                     break
 
             # noinspection PyUnboundLocalVariable
-            print(f'path_to_report_file:{path_to_report_file}')
+            self.log(f'handler_directory_report: Файл принят в обработку:', level='debug')
+            self.log(f'  {path_to_report_file}', level='debug')
             time_modify_report = os.path.getmtime(path_to_report_file)
             data_config_reports = self.config_directory_report.get_all_config_program()
 
@@ -140,5 +141,5 @@ class ReportHandler:
 
 
         # noinspection PyArgumentList
-        self.log(f'--Не удалось обработать: {os.path.basename(path_to_directory):}', color_log='#575a5e')
+        self.log(f'Не удалось обработать: {os.path.basename(path_to_directory):}', color_log='#575a5e', level='info')
         return None

@@ -16,6 +16,7 @@ configProgram = {
         , 'name directory database save reports': 'reports'
         , 'path to directory database save reports': ''
         , 'path to directory database': r'\\volna.dmn\data\obmen\Служба Главного инженера\ОГТ\ЧПУ\Программы Python\database_program'
+        , 'log level':'info'
     },
     'directory report': {
     }
