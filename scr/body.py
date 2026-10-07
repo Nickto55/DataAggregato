@@ -117,7 +117,7 @@ class AppGui(ctk.CTk):
             self
             , width=self.window_main_x
             , height=self.height_row_in_frame
-            , fg_color='#2b2b2b'
+            , fg_color='#000000'
             , corner_radius=0
         )
         menu_frame.place(x=0, y=0)
@@ -153,8 +153,8 @@ class AppGui(ctk.CTk):
             corner_radius=0,
             border_spacing=0,
             image=ctk_icon,
-            fg_color="#2b2b2b",
-            hover_color="#414141"
+            fg_color="#000000",
+            hover_color="#000000"
         )
         self.button_ico_from_global_menu.place(x=0, y=0)
 
@@ -165,7 +165,7 @@ class AppGui(ctk.CTk):
             text='⨉',
             height=self.height_row_in_frame,
             corner_radius=0,
-            fg_color="#2b2b2b",
+            fg_color="#000000",
             hover_color="red",
             command=lambda: [self.destroy(), sys.exit(0)]
         )
@@ -176,7 +176,7 @@ class AppGui(ctk.CTk):
             text='▢',
             height=self.height_row_in_frame,
             corner_radius=0,
-            fg_color="#2b2b2b",
+            fg_color="#000000",
             hover_color="#414141"
         )
         button_change_size.place(x=self.window_main_x - self.width_button_menu_frame * 2, y=0)
@@ -186,7 +186,7 @@ class AppGui(ctk.CTk):
             text='—',
             height=self.height_row_in_frame,
             corner_radius=0,
-            fg_color="#2b2b2b",
+            fg_color="#000000",
             hover_color="#414141",
             command=minimize_window
         )
@@ -199,7 +199,7 @@ class AppGui(ctk.CTk):
             , width=self.width_button_menu_frame
             , height=self.height_row_in_frame
             , corner_radius=0
-            , fg_color='#2b2b2b'
+            , fg_color='#000000'
             , hover_color='#414141'
         )
         menu_button.place(x=self.width_button_menu_frame, y=0)
@@ -210,7 +210,6 @@ class AppGui(ctk.CTk):
             self.config_aggregato.set_config_progrm(key='log level', data=level)
             self.submenu_logs.menu_seed_object.configure(text=f'logs — {(level[:1]).upper()}{level[1:]}')
 
-            # изменение окантовки консоли
             if level == "debug":
                 self.logs_frame.configure(fg_color='#cf8328')
             else:
@@ -230,7 +229,6 @@ class AppGui(ctk.CTk):
         submenu_config.add_option(option="Open in explorer",
                                   command=lambda: os.startfile(os.path.dirname(self.config_aggregato.path_to_config)))
 
-        # dropdown.add_option(option="Выход", command=self.quit)
 
     # noinspection PyAttributeOutsideInit
     def geomitri_constants(self):
@@ -428,7 +426,6 @@ class AppGui(ctk.CTk):
             x=self.indent_frame,
             y=self.indent_frame
         )
-        # self.status_text.insert("0.0", "Готов к запуску...\n")
 
     def swith_main_frame(self):
         self.log(f' {str(bool(self.checkbox_pivot_var.get())):<6}|{bool(self.checkbox_construction_result_var.get())}',
@@ -447,7 +444,7 @@ class AppGui(ctk.CTk):
 
             try:
                 os.startfile(self.path_outfile)
-                self.log("-Файл открыт", color_log="#788084")
+                self.log("-Файл открыт", level='info' ,color_log="#788084")
             except Exception as e:
                 self.log(f"Ошибка при открытии файла: {e}", color_log="red")
                 self.start_button.configure(state="normal")
@@ -737,31 +734,6 @@ class _ConfigurationSettingsWindow(ctk.CTkToplevel):
             self.log(f'{key}, {self.labels[key][1].get()}', level='debug')
             self.config_aggregato.set_config_progrm(key=key, data=self.labels[key][1].get())
         self.destroy()
-        # sys.exit(0)
-
-
-# class _ConfigurationSettingsWindow(ctk.CTkToplevel):
-
-
-#     _instance = None
-#
-#     def __new__(cls, *args, **kwargs):
-#         if cls._instance is None or not cls._instance.winfo_exists():
-#             cls._instance = super().__new__(cls)
-#         return cls._instance
-#
-#     def __init__(self, parent=None, main_window_geomitri_constants=None):
-#         if getattr(self, "_initialized", False):
-#             self.lift()
-#             self.focus_force()
-#
-#         super().__init__()
-#         self._initialized = True  # Помечаем, что инициализация прошла
-#
-#         self.title("Configuration settings window")
-#         self.geometry(f"500x300")
-#         ctk.set_appearance_mode("dark")
-#         self.iconbitmap(resource_path(r"static/img/ico/aggregato.ico"))
 
 
 if __name__ == "__main__":
