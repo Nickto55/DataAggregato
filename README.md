@@ -52,13 +52,12 @@ DataAggregato/
    ```bash
    pip install customtkinter pandas openpyxl
    ```
-   *(Если в репозитории появится файл `requirements.txt`, используйте команду `pip install -r requirements.txt`)*
+
 
 4. **Запустите приложение**:
    ```bash
-   python scr/aggregato.py
+   python scr/body.py
    ```
-   *(Или запустите основной файл GUI, если точка входа вынесена отдельно)*
 
 ## Использование
 
